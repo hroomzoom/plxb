@@ -4,7 +4,7 @@ CC = avr-gcc
 OBJCOPY = avr-objcopy
 CFLAGS = -mmcu=$(MCU) -DF_CPU=$(F_CPU) -Os -Wall
 
-SRC = $(wildcard *.c)
+SRC = $(wildcard ../../*.c)
 TARGET = plxb
 
 all: $(TARGET).hex
