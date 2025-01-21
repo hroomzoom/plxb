@@ -59,11 +59,13 @@ uint16_t adc_spi_rx(){
     //get adc miso data
     for(int i=0; i<SCK_CYCLES; ++i){
         mcrClrTC_SPI_SCK();
-
+        mcrClrTC_SPI_SCK();
+        
         bit_value = mcrReadTC_SPI_MISO();
         if(bit_value) 
             value |= (TC_SPI_MISO_MASK >> i);
-
+        
+        mcrSetTC_SPI_SCK();
         mcrSetTC_SPI_SCK();
     }
 
