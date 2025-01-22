@@ -15,21 +15,30 @@
 void init_adc(); //initialize spi and mux pins
 uint16_t adc_spi_rx(); //Read SPI RX adc data
 void select_adc_channel(uint8_t channel);//Select adc channel
-void read_zones();//Read and get mean of thermistor zones
+uint16_t read_zone(uint8_t channel, uint16_t z_buffer[]); //read zone and return mean
 
 uint16_t z1_buffer[BUFFER_SIZE] = {0};
 uint16_t z2_buffer[BUFFER_SIZE] = {0};
 uint16_t z3_buffer[BUFFER_SIZE] = {0};
 uint16_t z4_buffer[BUFFER_SIZE] = {0};
 
-uint16_t zone_means[NUM_ZONES] = {0};
+uint16_t z1_mean=0, z2_mean=0, z3_mean=0, z4_mean=0;
 
 
 int main(void){ 
     init_adc();
     while(1){
-        read_zones();
-        MicroSecondDelay(1);
+        MicroSecondDelay(10);  
+        z1_mean = read_zone(0, z1_buffer);
+
+        MicroSecondDelay(10);
+        z2_mean = read_zone(1, z2_buffer);
+
+        MicroSecondDelay(10);
+        z3_mean = read_zone(2, z3_buffer);
+
+        MicroSecondDelay(10);
+        z4_mean = read_zone(3, z4_buffer);   
     }
     return 0;
 }
@@ -60,11 +69,11 @@ uint16_t adc_spi_rx(){
     for(int i=0; i<SCK_CYCLES; ++i){
         mcrClrTC_SPI_SCK();
         mcrClrTC_SPI_SCK();
-        
+
         bit_value = mcrReadTC_SPI_MISO();
         if(bit_value) 
             value |= (TC_SPI_MISO_MASK >> i);
-        
+
         mcrSetTC_SPI_SCK();
         mcrSetTC_SPI_SCK();
     }
@@ -84,29 +93,29 @@ void select_adc_channel(uint8_t ch){
     (ch & TC_ADC_A2_MASK) ? mcrSetTC_ADC_A2() : mcrClrTC_ADC_A2();
 }
 
-void read_zones(){
+
+uint16_t read_zone(uint8_t channel, uint16_t z_buffer[]){
+    
+    uint16_t min = UINT16_MAX;
+    uint16_t max = 0;
+    uint16_t z_sum = 0;
 
     for(int i=0; i<BUFFER_SIZE; ++i){
-        //read zone 1
+        
         select_adc_channel(0);
-        z1_buffer[i] = adc_spi_rx();
-        zone_means[0] += (z1_buffer[i]/BUFFER_SIZE);
+        z_buffer[i] = adc_spi_rx();
+        z_sum += z_buffer[i];
 
-        //read zone 2
-        select_adc_channel(1);
-        z2_buffer[i] = adc_spi_rx();
-        zone_means[1] += (z2_buffer[i]/BUFFER_SIZE);
-
-        //read zone 3
-        select_adc_channel(2);
-        z3_buffer[i] = adc_spi_rx();
-        zone_means[2] += (z3_buffer[i]/BUFFER_SIZE);
-
-        //read zone 4
-        select_adc_channel(3);
-        z4_buffer[i] = adc_spi_rx();
-        zone_means[3] += (z4_buffer[i]/BUFFER_SIZE);
-
-        MicroSecondDelay(1);
+        if(z_buffer[i] < min)
+            min = z1_buffer[i];
+        if(z_buffer[i] > max)
+            max = z_buffer[i];  
     }
+
+    z_sum -= min;
+    z_sum -= max;
+
+    return (z_sum/(BUFFER_SIZE-2));
 }
+
+
